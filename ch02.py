@@ -312,7 +312,7 @@ token_embeddings = token_embedding_layer(inputs)
 #获取位置嵌入层，contex_len * 256
 context_length = max_length
 pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
-pos_embeddings = pos_embedding_layer(torch.arange(context_length))#从0开始递增
+pos_embeddings = pos_embedding_layer(torch.arange(context_length))#绝对位置方案从0开始递增
 # print(pos_embeddings.shape)
 # torch.Size([4, 256])
 #计算输入张量，pytorch 会在每个批次的4*256维的词元嵌入张量上添加一个4*256维度的pos_embeddings张量
