@@ -330,4 +330,11 @@ context_vecs = mha(batch)
 # print('context_vecs.shape:', context_vecs.shape)
 
 mha = MutiHeadAttention(768, 768, 3, 0.0, 12)
-print(mha)
+# print(mha)
+# MutiHeadAttention(
+#   (W_query): Linear(in_features=768, out_features=768, bias=False)
+#   (W_key): Linear(in_features=768, out_features=768, bias=False)
+#   (W_value): Linear(in_features=768, out_features=768, bias=False)
+#   (out_proj): Linear(in_features=768, out_features=768, bias=True)
+#   (dropout): Dropout(p=0.0, inplace=False)
+# )
