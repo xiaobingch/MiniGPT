@@ -263,25 +263,25 @@ num_epochs = 10
 # 训练集和验证集损失图表
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-def plot_losses(epochs_seen, tokens_seen, train_losses, val_losses):
-    fig, ax1 = plt.subplots(figsize=(5, 3))
+# def plot_losses(epochs_seen, tokens_seen, train_losses, val_losses):
+#     fig, ax1 = plt.subplots(figsize=(5, 3))
 
-    # Plot training and validation loss against epochs
-    ax1.plot(epochs_seen, train_losses, label="Training loss")
-    ax1.plot(epochs_seen, val_losses, linestyle="-.", label="Validation loss")
-    ax1.set_xlabel("Epochs")
-    ax1.set_ylabel("Loss")
-    ax1.legend(loc="upper right")
-    ax1.xaxis.set_major_locator(MaxNLocator(integer=True))  # only show integer labels on x-axis
+#     # Plot training and validation loss against epochs
+#     ax1.plot(epochs_seen, train_losses, label="Training loss")
+#     ax1.plot(epochs_seen, val_losses, linestyle="-.", label="Validation loss")
+#     ax1.set_xlabel("Epochs")
+#     ax1.set_ylabel("Loss")
+#     ax1.legend(loc="upper right")
+#     ax1.xaxis.set_major_locator(MaxNLocator(integer=True))  # only show integer labels on x-axis
 
-    # Create a second x-axis for tokens seen
-    ax2 = ax1.twiny()  # Create a second x-axis that shares the same y-axis
-    ax2.plot(tokens_seen, train_losses, alpha=0)  # Invisible plot for aligning ticks
-    ax2.set_xlabel("Tokens seen")
+#     # Create a second x-axis for tokens seen
+#     ax2 = ax1.twiny()  # Create a second x-axis that shares the same y-axis
+#     ax2.plot(tokens_seen, train_losses, alpha=0)  # Invisible plot for aligning ticks
+#     ax2.set_xlabel("Tokens seen")
 
-    fig.tight_layout()  # Adjust layout to make room
-    plt.savefig("loss-plot.pdf")
-    plt.show()
+#     fig.tight_layout()  # Adjust layout to make room
+#     plt.savefig("loss-plot.pdf")
+#     plt.show()
 
 # epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
 # plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
@@ -353,17 +353,17 @@ scaled_probas = [softmax_width_temperature(next_token_logits, T) for T in temper
 # print(scaled_probas)
 
 # Plotting
-x = torch.arange(len(vocab))
-bar_width = 0.15
+# x = torch.arange(len(vocab))
+# bar_width = 0.15
 
-fig, ax = plt.subplots(figsize=(5, 3))
-for i, T in enumerate(temperatures):
-    rects = ax.bar(x + i * bar_width, scaled_probas[i], bar_width, label=f'Temperature = {T}')
+# fig, ax = plt.subplots(figsize=(5, 3))
+# for i, T in enumerate(temperatures):
+#     rects = ax.bar(x + i * bar_width, scaled_probas[i], bar_width, label=f'Temperature = {T}')
 
-ax.set_ylabel('Probability')
-ax.set_xticks(x)
-ax.set_xticklabels(vocab.keys(), rotation=90)
-ax.legend()
+# ax.set_ylabel('Probability')
+# ax.set_xticks(x)
+# ax.set_xticklabels(vocab.keys(), rotation=90)
+# ax.legend()
 
 # plt.tight_layout()
 # plt.savefig("temperature-plot.pdf")
@@ -543,7 +543,7 @@ token_ids = generate(
     idx = text_to_token_ids("I HAD always thought Jack", tokenizer).to(device),
     max_new_tokens = 25,
     context_size = NEW_CONFIG["context_length"],
-    top_k= 1,
-    temperature = 0.0
+    top_k= 25,
+    temperature = 1.5
 )
 print("Ooutput text:\n", token_ids_to_text(token_ids, tokenizer))
