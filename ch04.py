@@ -1,7 +1,8 @@
 # 4.1 构建一个大语言模型
 GPT_CONFIG_124M = {
-    'vacab_size': 50257,        #词汇表大小
-    'context_length': 1024,     #上下文长度
+    'vocab_size': 50257,        #词汇表大小
+    # 'context_length': 1024,     #上下文长度
+    'context_length': 256,     #上下文长度
     'emb_dim':768,              #嵌入维度
     'n_heads':12,               #注意力头数
     'n_layers':12,              #层数
@@ -16,14 +17,14 @@ import torch.nn as nn
 class DummyGPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.tok_emb = nn.Embedding(cfg['vacab_size'], cfg['emb_dim'])
+        self.tok_emb = nn.Embedding(cfg['vocab_size'], cfg['emb_dim'])
         self.pos_emb = nn.Embedding(cfg['context_length'], cfg['emb_dim'])
         self.drop_emb = nn.Dropout(cfg['drop_rate'])
         self.trf_blocks = nn.Sequential(
             *[DummyTransformerBlock(cfg) for _ in range(cfg['n_layers'])]#TransformerBlock 占位
         )
         self.final_norm = DummyLayerNorm(cfg['emb_dim'])
-        self.out_head = nn.Linear(cfg['emb_dim'], cfg['vacab_size'], bias=False)
+        self.out_head = nn.Linear(cfg['emb_dim'], cfg['vocab_size'], bias=False)
     
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
@@ -275,7 +276,7 @@ from ch03 import MutiHeadAttention
 class TransformerBlock(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.att = MutiHeadAttention(
+        self.attn = MutiHeadAttention(
             d_in = cfg["emb_dim"],
             d_out = cfg["emb_dim"],
             context_length = cfg["context_length"],
@@ -283,20 +284,20 @@ class TransformerBlock(nn.Module):
             dropout = cfg["drop_rate"],
             qkv_bias = cfg["qkv_bias"]
         )
-        self.ff = FeedForward(cfg)
+        self.ffn = FeedForward(cfg)
         self.norm1 = LayerNorm(cfg["emb_dim"])
         self.norm2 = LayerNorm(cfg["emb_dim"])
         self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
     def forward(self, x):
         shortcut = x #注意力模块添加快捷连接
         x = self.norm1(x)
-        x = self.att(x)
+        x = self.attn(x)
         x = self.drop_shortcut(x)
         x = x + shortcut #原始输入添加回来
 
         shortcut = x #前馈层添加快捷连接
-        x = self.norm1(x)
-        x = self.ff(x)
+        x = self.norm2(x)
+        x = self.ffn(x)
         x = self.drop_shortcut(x)
         x = x + shortcut # 原始输入添加回来
         return x
@@ -318,14 +319,14 @@ output = block(x)
 class GPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.tok_emb = nn.Embedding(cfg['vacab_size'], cfg['emb_dim'])
+        self.tok_emb = nn.Embedding(cfg['vocab_size'], cfg['emb_dim'])
         self.pos_emb = nn.Embedding(cfg['context_length'], cfg['emb_dim'])
         self.drop_emb = nn.Dropout(cfg['drop_rate'])
         self.trf_blocks = nn.Sequential(
             *[TransformerBlock(cfg) for _ in range(cfg['n_layers'])]
         )
-        self.final_norm = DummyLayerNorm(cfg['emb_dim'])
-        self.out_head = nn.Linear(cfg['emb_dim'], cfg['vacab_size'], bias=False)
+        self.final_norm = LayerNorm(cfg['emb_dim'])
+        self.out_head = nn.Linear(cfg['emb_dim'], cfg['vocab_size'], bias=False)
     
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
@@ -342,7 +343,7 @@ class GPTModel(nn.Module):
 
 torch.manual_seed(123)
 model = GPTModel(GPT_CONFIG_124M)
-out = model(batch) #[batch_size, num_tokens, vacab_size]
+out = model(batch) #[batch_size, num_tokens, vocab_size]
 # print('input batch:\n', batch)
 # print('output shape:\n',out.shape)
 # print(out)
@@ -398,7 +399,7 @@ def generate_text_simple(model, idx, max_new_tokens, context_size):
         with torch.no_grad():
             logits = model(idx_cond)
         # 只关注最后一个输出的token
-        # 形状变换：[batch, n_tokens, vacab_size]---> [batch, vacab_size]
+        # 形状变换：[batch, n_tokens, vocab_size]---> [batch, vocab_size]
         logits = logits[:, -1, :]
         probas = torch.softmax(logits, dim=-1)
         # 形状变为：[batch, 1]
@@ -425,9 +426,9 @@ out = generate_text_simple(
 )
 decoded_text = tokenizer.decode(out.squeeze(0).tolist())
 
-print('Output:', out)
-print('Output length:', len(out[0]))
-print(decoded_text)
+# print('Output:', out)
+# print('Output length:', len(out[0]))
+# print(decoded_text)
 # Output: tensor([[15496,    11,   314,   716,  3127, 29991,  6539, 21826, 18530,  6276]])
 # Output length: 10
 # Hello, I am network BEL Afghan postp aired technical
