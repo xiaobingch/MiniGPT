@@ -84,7 +84,7 @@ log_probas = torch.log(torch.cat((targets_probas_1, targets_probas_2)))# 3.对�
 # print(log_probas)
 avg_log_probas = torch.mean(log_probas) #4.平均对数概率
 # print(avg_log_probas)
-neg_avg_log_probas = avg_log_probas * -1 #5.负评价对数概率（交叉墒）
+neg_avg_log_probas = avg_log_probas * -1 #5.负平均对数概率（交叉墒）
 # print(neg_avg_log_probas)
 # tensor(10.9609)
 
@@ -165,7 +165,11 @@ def calc_loss_batch(input_batch, target_batch, model, device):
     target_batch = target_batch.to(device)
     logits = model(input_batch)
     loss = torch.nn.functional.cross_entropy(
-        logits.flatten(0, 1), target_batch.flatten()
+        # 抹平第 0 维即 batch_size 维，将 logits 的形状从 (batch_size, num_tokens, vocab_size) 转换为 (batch_size * num_tokens, vocab_size)
+        logits.flatten(0, 1), 
+
+        # 抹平第 0 维即 batch_size 维，将 target_batch 的形状从 (batch_size, num_tokens) 转换为 (batch_size * num_tokens)
+        target_batch.flatten()
     )
     return loss
 
@@ -213,25 +217,25 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
             tokens_seen += input_batch.numel() #已阅读token数量
             global_step += 1 #进行多少次参数更新
 
-        #     if global_step % eval_freq == 0: #可选的评估步骤，每几步评估一次
-        #         train_loss, val_loss = evaluate_model(model, train_loader, val_loader, device, eval_iter)
-        #         train_losses.append(train_loss)
-        #         val_losses.append(val_loss)
-        #         track_tokens_seen.append(tokens_seen)
-        #         print(
-        #             f"Ep {epoch+1} (Step {global_step:06d}):"
-        #             f"Train loss {train_loss:.3f}, "
-        #             f"Val loss {val_loss:.3f}"
-        #         )
-        # generate_and_print_sample(
-        #     model, tokenizer, device, start_context
-        # )
+            if global_step % eval_freq == 0: #可选的评估步骤，每几步评估一次
+                train_loss, val_loss = evaluate_model(model, train_loader, val_loader, device, eval_iter)
+                train_losses.append(train_loss)
+                val_losses.append(val_loss)
+                track_tokens_seen.append(tokens_seen)
+                print(
+                    f"Ep {epoch+1} (Step {global_step:06d}):"
+                    f"Train loss {train_loss:.3f}, "
+                    f"Val loss {val_loss:.3f}"
+                )
+        generate_and_print_sample(
+            model, tokenizer, device, start_context
+        )
     return train_losses, val_losses, track_tokens_seen
 
 # 评估模型损失（数值）
 def evaluate_model(model, train_loader, val_loader, device, eval_iter):
-    model.eval()
-    with torch.no_grad():
+    model.eval() # 评估阶段禁用dropout以产出稳定且可复现的结果
+    with torch.no_grad(): #评估阶段禁用梯度跟踪，减少计算开销也无必要
         train_loss = calc_loss_loader(train_loader, model, device, num_batches=eval_iter)
         val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter)
     model.train()
@@ -285,6 +289,7 @@ from matplotlib.ticker import MaxNLocator
 
 # epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
 # plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
+
 
 # 5.3 文本生成策略（解码策略）
 model.to("cpu")
@@ -425,6 +430,7 @@ torch.manual_seed(123)
 # )
 # print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
 
+
 # 5.4使用pytorch保存模型权重
 # torch.save(model.state_dict(), 'model.pth')
 # #加载权重
@@ -446,8 +452,8 @@ torch.manual_seed(123)
 # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 # model.train()
 
-# 5.5从OpenAI加载预训练权重
 
+# 5.5从OpenAI加载预训练权重
 model_configs = {
     "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
     "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
@@ -530,7 +536,6 @@ def load_gpt2_weights_into_model(model, model_path):
     assign(model.out_head.weight, gpt2_model["wte.weight"])
 
     return model
-
 
 gpt = GPTModel(NEW_CONFIG)
 gpt.eval()
