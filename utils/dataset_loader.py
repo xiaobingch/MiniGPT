@@ -11,7 +11,7 @@ class GPTDatasetV1(Dataset):
         max_length:序列最大长度
         stride:滑动窗口的步长
     '''
-    def __init__(self, , tokenizer, max_length, stride):
+    def __init__(self, txt, tokenizer, max_length, stride):
         self.input_ids = []
         self.target_ids = []
 

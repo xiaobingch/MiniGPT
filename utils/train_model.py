@@ -1,4 +1,6 @@
 from .metrics import calc_loss_batch, calc_loss_loader
+from utils.model_inference import token_ids_to_text, text_to_token_ids, generate
+import torch
 
 def train_model(model, train_loader, val_loader, optimizer, device, num_epochs, eval_freq, eval_iter, start_context, tokenizer):
     '''
@@ -57,16 +59,16 @@ def train_model(model, train_loader, val_loader, optimizer, device, num_epochs, 
                     f"Train loss {train_loss:.3f}, "
                     f"Val loss {val_loss:.3f}"
                 )
-        # 每轮之后打印一个文本样本
-        # generate_and_print_sample(
-        #     model, tokenizer, device, start_context
-        # )
+        # 每轮之后打印一个文本样本以评估模型
+        generate_and_print_sample(
+            model, tokenizer, device, start_context
+        )
     return train_losses, val_losses, track_tokens_seen
 
 
 def evaluate_model(model, train_loader, val_loader, device, eval_iter):
     '''
-    评估模型损失（数值）
+    评估模型损失(数值)
     Args:
         model:模型
         train_loader:训练数据集
@@ -88,13 +90,53 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
 
 
 
-# 评估模型（文本）
-# def generate_and_print_sample(model, tokenizer, device, start_context):
-#     model.eval()
-#     context_size = model.pos_emb.weight.shape[0]
-#     encode = text_to_token_ids(start_context, tokenizer).to(device)
-#     with torch.no_grad():
-#         token_ids = generate_text_simple(model=model, idx=encode, max_new_tokens=50, context_size=context_size)
-#     decode_text = token_ids_to_text(token_ids, tokenizer)
-#     print(decode_text.replace("\n", ""))
-#     model.train()
+def generate_and_print_sample(model, tokenizer, device, start_context):
+    """
+    接收初始提示文本，调用模型生成后续文本并在终端打印。
+    常用于训练过程中定期采样，以直观观察模型的生成效果。
+
+    参数说明:
+    ----------
+    model : torch.nn.Module (如 GPTModel)
+        待评估的大语言模型实例。
+    tokenizer : Tokenizer 实例
+        文本分词器，用于在字符串(String)与数字编号(Token ID)之间进行互相转换。
+    device : torch.device (如 'cuda' 或 'cpu')
+        张量(Tensor)计算的目标设备，指示模型和数据运行在 GPU 还是 CPU 上。
+    start_context : str
+        文本生成的起始提示词(Prompt)，即模型接龙续写的上文内容。
+    """
+    
+    # 1. 将模型切换为评估模式(Evaluation Mode)
+    # 作用：禁用 Dropout 和 LayerNorm 的动态更新，确保推理/评估过程稳定且可复现
+    model.eval()
+    
+    # 2. 从位置编码矩阵中获取模型支持的最大上下文长度(Context Length / Block Size)
+    # pos_emb.weight 的形状为 (context_size, emb_dim)，第 0 维代表最大序列长度
+    context_size = model.pos_emb.weight.shape[0]
+    
+    # 3. 将输入的文本提示(Prompt)转换为 Token ID 序列，并移动到指定的计算设备(CPU 或 GPU)
+    # 输入维度形状为：(1, sequence_length)
+    encode = text_to_token_ids(start_context, tokenizer).to(device)
+    
+    # 4. 禁用梯度计算上下文(No-Grad Context)
+    # 作用：在推理阶段不构建计算图，大幅节省显存并加快计算速度
+    with torch.no_grad():
+        # 调用文本生成逻辑，自回归地预测接下来的 50 个 token
+        # 传入 context_size 以确保在生成过程中对输入序列进行裁剪，防止超出位置编码上限
+        token_ids = generate(
+            model=model, 
+            idx=encode, 
+            max_new_tokens=50, 
+            context_size=context_size
+        )
+    
+    # 5. 将生成的 Token ID 序列反解码(Decode)回人类可读的文本字符串
+    decode_text = token_ids_to_text(token_ids, tokenizer)
+    
+    # 6. 打印解码后的文本，并去除换行符，以便在一行中更整洁地展示输出
+    print(decode_text.replace("\n", ""))
+    
+    # 7. 将模型重新恢复为训练模式(Training Mode)
+    # 作用：重新启用 Dropout 等层，避免影响后续继续进行的训练过程
+    model.train()

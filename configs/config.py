@@ -1,6 +1,7 @@
 GPT_CONFIG_124M = {
     'vocab_size': 50257,        #词汇表大小
-    'context_length': 1024,     #上下文长度
+    # 'context_length': 1024,     #上下文长度
+    'context_length': 256,     #上下文长度 单机预训练时使用过
     'emb_dim':768,              #嵌入维度
     'n_heads':12,               #注意力头数
     'n_layers':12,              #层数

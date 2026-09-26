@@ -1,6 +1,7 @@
 from  utils.dataset_loader import create_dataloader_v1
 from configs.config import GPT_CONFIG_124M
 from utils.train_model import train_model
+from model.gpt_model import GPTModel
 import tiktoken
 import torch
 import sys
@@ -26,14 +27,12 @@ torch.manual_seed(123)
 ##############################
 
 # 读取原始数据集
-file_path = "data/让子弹飞.txt"
+file_path = "data/the-verdict.txt"
 with open(file_path, "r", encoding="utf-8") as file:
     text_data = file.read()
 
 total_characters = len(text_data)
 total_tokens = len(tokenizer.encode(text_data))
-
-sys.exit(0)
 
 # 切分训练集和验证集，这里将 90% 的数据作为训练集，10% 的数据作为验证集
 train_ratio = 0.9
@@ -44,6 +43,7 @@ val_data = text_data[split_idx:]
 batch_size = 2      # 设置批次大小
 num_workers = 0     # 设置数据加载器的多线程工作线程数
 
+# 准备训练数据集
 train_loader = create_dataloader_v1(
     train_data,
     batch_size=batch_size,
@@ -54,18 +54,25 @@ train_loader = create_dataloader_v1(
     num_workers=num_workers
 )
 
+# 准备验证数据集
 val_loader = create_dataloader_v1(
     val_data,
     batch_size=batch_size,
     max_length=GPT_CONFIG_124M["context_length"],
     stride=GPT_CONFIG_124M["context_length"],
-    # max_length=256,
-    # stride=256,
     drop_last=False,
     shuffle=False,
     num_workers=num_workers
 )
 
+# print("Train loader:")
+# for x, y in train_loader:
+#     print(x.shape, y.shape)
+
+# print("\nValidation loader:")
+# for x, y in val_loader:
+#     print(x.shape, y.shape)
+# sys.exit(0)
 
 ##############################
 # 初始化模型
@@ -95,7 +102,7 @@ train_losses, val_losses, tokens_seen = train_model(
     num_epochs=10, 
     eval_freq=5, 
     eval_iter=5,
-    start_context="Every effort moves you", 
+    start_context="all I think", 
     tokenizer=tokenizer
 )
 
