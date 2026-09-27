@@ -65,21 +65,12 @@ val_loader = create_dataloader_v1(
     num_workers=num_workers
 )
 
-# print("Train loader:")
-# for x, y in train_loader:
-#     print(x.shape, y.shape)
-
-# print("\nValidation loader:")
-# for x, y in val_loader:
-#     print(x.shape, y.shape)
-# sys.exit(0)
 
 ##############################
 # 初始化模型
 ##############################
 model = GPTModel(GPT_CONFIG_124M)
 model.to(device)
-
 
 ##############################
 # 训练模型并保存权重

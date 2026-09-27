@@ -95,16 +95,15 @@ def generate_and_print_sample(model, tokenizer, device, start_context):
     接收初始提示文本，调用模型生成后续文本并在终端打印。
     常用于训练过程中定期采样，以直观观察模型的生成效果。
 
-    参数说明:
-    ----------
-    model : torch.nn.Module (如 GPTModel)
-        待评估的大语言模型实例。
-    tokenizer : Tokenizer 实例
-        文本分词器，用于在字符串(String)与数字编号(Token ID)之间进行互相转换。
-    device : torch.device (如 'cuda' 或 'cpu')
-        张量(Tensor)计算的目标设备，指示模型和数据运行在 GPU 还是 CPU 上。
-    start_context : str
-        文本生成的起始提示词(Prompt)，即模型接龙续写的上文内容。
+    Args:
+        model : torch.nn.Module (如 GPTModel)
+            待评估的大语言模型实例。
+        tokenizer : Tokenizer 实例
+            文本分词器，用于在字符串(String)与数字编号(Token ID)之间进行互相转换。
+        device : torch.device (如 'cuda' 或 'cpu')
+            张量(Tensor)计算的目标设备，指示模型和数据运行在 GPU 还是 CPU 上。
+        start_context : str
+            文本生成的起始提示词(Prompt)，即模型接龙续写的上文内容。
     """
     
     # 1. 将模型切换为评估模式(Evaluation Mode)
