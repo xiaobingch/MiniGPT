@@ -36,7 +36,6 @@ class GPTDatasetV1(Dataset):
         return self.input_ids[idx], self.target_ids[idx]
 
 
-
 def create_dataloader_v1(txt, batch_size, max_length, stride,shuffle=True, drop_last=True, num_workers=0):
     '''
     用于批量生成输入-目标对的数据加载器
@@ -58,3 +57,4 @@ def create_dataloader_v1(txt, batch_size, max_length, stride,shuffle=True, drop_
         dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers)
 
     return dataloader
+
