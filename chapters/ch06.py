@@ -257,7 +257,7 @@ model = GPTModel(GPT_CONFIG_124M)
 load_gpt2_weights_into_model(model, 'pytorch_model.bin')
 model.eval()
 
-# text_1 = "Every effort moves you"
+text_1 = "Every effort moves you"
 # token_ids = generate(
 #     model=model,
 #     idx=text_to_token_ids(text_1,tokenizer),
@@ -273,13 +273,187 @@ text_2 = (
     " 'You are a winner you have been specially"
     " selected to receive $1000 cash or a $2000 award.'"
 )
-token_ids = generate(
-    model=model,
-    idx=text_to_token_ids(text_2,tokenizer),
-    max_new_tokens=24,
-    context_size=GPT_CONFIG_124M['context_length']
-)
-print(token_ids_to_text(token_ids, tokenizer))
+# token_ids = generate(
+#     model=model,
+#     idx=text_to_token_ids(text_2,tokenizer),
+#     max_new_tokens=24,
+#     context_size=GPT_CONFIG_124M['context_length']
+# )
+# print(token_ids_to_text(token_ids, tokenizer))
 # Is the following text 'spam'? Answer with 'yes' or 'no': 'You are a winner you have been specially selected to receive $1000 cash or a $2000 award.'
 # The following text 'spam'? Answer with 'yes' or 'no': 'You are a winner you
 
+
+# print(model)
+# GPTModel(
+#   (tok_emb): Embedding(50257, 768)
+#   (pos_emb): Embedding(1024, 768)
+#   (drop_emb): Dropout(p=0.1, inplace=False)
+#   (trf_blocks): Sequential(
+    
+#     (11): TransformerBlock(
+#       (attn): MutiHeadAttention(
+#         (W_query): Linear(in_features=768, out_features=768, bias=True)
+#         (W_key): Linear(in_features=768, out_features=768, bias=True)
+#         (W_value): Linear(in_features=768, out_features=768, bias=True)
+#         (out_proj): Linear(in_features=768, out_features=768, bias=True)
+#         (dropout): Dropout(p=0.1, inplace=False)
+#       )
+#       (ffn): FeedForward(
+#         (layers): Sequential(
+#           (0): Linear(in_features=768, out_features=3072, bias=True)
+#           (1): GELU()
+#           (2): Linear(in_features=3072, out_features=768, bias=True)
+#         )
+#       )
+#       (norm1): LayerNorm()
+#       (norm2): LayerNorm()
+#       (drop_shortcut): Dropout(p=0.1, inplace=False)
+#     )
+#   )
+#   (final_norm): LayerNorm()
+#   (out_head): Linear(in_features=768, out_features=50257, bias=False)
+# )
+
+##############################
+# 6.5 添加分类头
+##############################
+
+# 首先冻结模型，使所有层不可训练
+for param in model.parameters():
+    param.requires_grad = False
+
+# 替换输出层model.out_head
+torch.manual_seed(123)
+num_classes = 2
+# 添加分类层
+model.out_head = torch.nn.Linear(
+    in_features = GPT_CONFIG_124M['emb_dim'],
+    out_features = num_classes
+)
+# 使用最终归一化和最后一个Transformer块可训练
+for param in model.trf_blocks[-1].parameters():
+    param.requires_grad = True
+for param in model.final_norm.parameters():
+    param.requires_grad = True
+
+inputs = tokenizer.encode("Do you have time")
+inputs = torch.tensor(inputs).unsqueeze(0)
+# print("Inputs:", inputs)
+# print("Inputs dimensions:", inputs.shape)
+# Inputs: tensor([[5211,  345,  423,  640]])
+# Inputs dimensions: torch.Size([1, 4])
+with torch.no_grad():
+    outputs = model(inputs)
+# print("Outputs:", outputs)
+# print("Outputs dimemsions:", outputs.shape)
+# 形状由原来的的[batch_size,num_tokens,vocab_size]变为[batch_size,num_tokens,num_classes]
+# Outputs: tensor([[[-1.5854,  0.9904],
+#          [-3.7235,  7.4548],
+#          [-2.2661,  6.6049],
+#          [-3.5983,  3.9902]]])
+# Outputs dimemsions: torch.Size([1, 4, 2])
+
+# 取出最后一个token,因为掩码机制，最后一个token的信息积累更多
+# print("Last output token:", outputs[:, -1, :])
+# Last output token: tensor([[-3.5983,  3.9902]])
+
+##############################
+# 6.6 计算分类损失和准确率
+##############################
+probas = torch.softmax(outputs[:, -1, :], dim=-1)
+label = torch.argmax(probas)
+# print("class label:", label.item())
+# class label: 1
+
+# 可以省略softmax函数，因为最大输出直接对应于最高的概率分数
+logits = outputs[:, -1, :]
+label = torch.argmax(logits)
+# print("class label:", label.item())
+# class label: 1
+
+def calc_accuracy_loader(data_loader, model, device, num_batches=None):
+    '''
+    计算分类准确率
+    Args:
+        data_loader: 数据集
+        model: 模型实例
+        device: cpu或gpu
+        num_batches: 批次数量
+    '''
+    model.eval()
+    correct_predictions, num_examples = 0, 0
+
+    if num_batches is None:
+        num_batches = len(data_loader)
+    else:
+        num_batches = min(num_batches, len(data_loader))
+    for i, (input_batch, target_batch) in enumerate(data_loader):
+        if i < num_batches:
+            input_batch  = input_batch.to(device)
+            target_batch = target_batch.to(device)
+
+            with torch.no_grad():
+                # 最后一个词元的logits
+                logits = model(input_batch)[:, -1, :]
+            predicted_labels = torch.argmax(logits, dim=-1)
+
+            num_examples += predicted_labels.shape[0]
+            correct_predictions += (
+                (predicted_labels == target_batch).sum().item()
+            )
+        else:
+            break
+    return correct_predictions / num_examples 
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+
+torch.manual_seed(123)
+train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=10)
+val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=10)
+test_accuracy = calc_accuracy_loader(test_loader, model, device, num_batches=10)
+
+# print(f"Training accuracy: {train_accuracy*100:.2f}")
+# print(f"Validation accuracy: {val_accuracy*100:.2f}")
+# print(f"Test accuracy: {test_accuracy*100:.2f}")
+# Training accuracy: 46.25
+# Validation accuracy: 53.75
+# Test accuracy: 45.00
+
+#计算数据集的初始损失
+from utils.metrics import calc_loss_batch, calc_loss_loader
+
+with torch.no_grad():
+    train_loss = calc_loss_loader(
+        train_loader, 
+        model, 
+        device, 
+        num_batches=5, 
+        is_classification=True
+    )
+    val_loss = calc_loss_loader(
+        val_loader, 
+        model, 
+        device, 
+        num_batches=5, 
+        is_classification=True
+    )
+    test_loss = calc_loss_loader(
+        test_loader, 
+        model, 
+        device, 
+        num_batches=5, 
+        is_classification=True
+    )
+# print(f"Training loss: {train_loss:.3f}")
+# print(f"Vlidation loss: {val_loss:.3f}")
+# print(f"Test loss: {test_loss:.3f}")
+# Training loss: 3.211
+# Vlidation loss: 2.436
+# Test loss: 2.585
+
+##############################
+# 6.6 在有监督数据集上进行分类微调
+##############################
