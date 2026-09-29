@@ -1,7 +1,11 @@
-from .metrics import calc_loss_batch, calc_loss_loader
+from .metrics import calc_loss_batch, calc_loss_loader, calc_accuracy_loader
 from utils.model_inference import token_ids_to_text, text_to_token_ids, generate
 import torch
 
+
+##############################
+# 基础模型预训练
+##############################
 def train_model(model, train_loader, val_loader, optimizer, device, num_epochs, eval_freq, eval_iter, start_context, tokenizer):
     '''
     模型训练
@@ -59,10 +63,6 @@ def train_model(model, train_loader, val_loader, optimizer, device, num_epochs, 
                     f"Train loss {train_loss:.3f}, "
                     f"Val loss {val_loss:.3f}"
                 )
-        # 每轮之后打印一个文本样本以评估模型
-        generate_and_print_sample(
-            model, tokenizer, device, start_context
-        )
     return train_losses, val_losses, track_tokens_seen
 
 
@@ -87,7 +87,6 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter, is_classi
     # 恢复模型为训练模式
     model.train()
     return train_loss, val_loss
-
 
 
 def generate_and_print_sample(model, tokenizer, device, start_context):
@@ -139,3 +138,72 @@ def generate_and_print_sample(model, tokenizer, device, start_context):
     # 7. 将模型重新恢复为训练模式(Training Mode)
     # 作用：重新启用 Dropout 等层，避免影响后续继续进行的训练过程
     model.train()
+
+
+##############################
+# 分类微调基础模型
+##############################
+def train_classifier(model,train_loader,val_loader,optimizer,device,num_epochs,eval_freq,eval_iter):
+    '''
+    分类微调
+    Args:
+        model: 语言模型实例
+        train_loader: 训练数据集
+        val_loader: 验证数据集
+        optimizer: 优化器
+        device: 决定训练模型在 CPU 还是 GPU 上运行
+        num_epochs: 训练轮次
+        eval_freq: 每隔多少个批次打印一次训练集和验证集损失
+        eval_iter: 计算数据集损失时使用的批次数
+    '''
+    # 初始化列表以根中损失和所见样本
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
+    examples_seen, global_step = 0, -1
+
+    # 主训练循环
+    for epoch in range(num_epochs):
+        # 设置模型为训练模式
+        model.train()
+        for input_batch, target_batch in train_loader:
+            # 重制上一批次迭代的损失梯度
+            optimizer.zero_grad()
+
+            # 计算损失梯度
+            loss = calc_loss_batch(
+                input_batch,
+                target_batch,
+                model,
+                device,
+                is_classification=True
+            )
+
+            # 反向传播损失梯度
+            loss.backward()
+
+            # 使用损失梯度更新模型权重
+            optimizer.step()
+
+            # 跟踪样本而不是词元
+            examples_seen += input_batch.shape[0]
+
+            global_step += 1
+
+            # 可选评估步骤
+            if global_step % eval_freq == 0:
+                train_loss, val_loss, = evaluate_model(model, train_loader, val_loader, device, eval_iter, is_classification=True)
+                train_losses.append(train_loss)
+                val_losses.append(val_loss)
+                print(
+                    f"Ep {epoch + 1}(Step {global_step:06d}: "
+                    f"Train loss {train_loss:.3f}, "
+                    f"Val loss {val_loss:.3f}"
+                )
+        # 每轮训练后计算准确率
+        train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=eval_iter)
+        val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=eval_iter)
+            
+        print(f"Training accuracy: {train_accuracy * 100:.2f}% | ", end="")
+        print(f"Validation accuracy: {val_accuracy * 100:.2f}%")
+        train_accs.append(train_accuracy)
+        val_accs.append(val_accuracy)
+    return train_losses, val_losses, train_accs, val_accs, examples_seen

@@ -116,7 +116,7 @@ from torch.utils.data import Dataset
 
 class SpamDataset(Dataset):
     '''
-    批处理数据集的输入(文本内容)和目标(类别标签)
+    批处理分类数据集的输入(文本内容)和目标(类别标签)
     Args:
         csv_file: 数据集
         tokenizer: 分词器
@@ -519,7 +519,7 @@ def train_classifier_simple(model,train_loader,val_loader,optimizer,device,num_e
         val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=eval_iter)
             
         print(f"Training accuracy: {train_accuracy * 100:.2f}% | ", end="")
-        print(f"Validation accuracy: {val_accuracy * 100:.2f}")
+        print(f"Validation accuracy: {val_accuracy * 100:.2f}%")
         train_accs.append(train_accuracy)
         val_accs.append(val_accuracy)
     return train_losses, val_losses, train_accs, val_accs, examples_seen

@@ -121,3 +121,38 @@ def calc_loss_loader(data_loader, model, device, num_batches=None, is_classifica
             break
     # 将数据集中所有 batch 的损失 loss 平均值
     return total_loss / num_batches
+
+
+def calc_accuracy_loader(data_loader, model, device, num_batches=None):
+    '''
+    计算分类准确率
+    Args:
+        data_loader: 数据集
+        model: 模型实例
+        device: cpu或gpu
+        num_batches: 批次数量
+    '''
+    model.eval()
+    correct_predictions, num_examples = 0, 0
+
+    if num_batches is None:
+        num_batches = len(data_loader)
+    else:
+        num_batches = min(num_batches, len(data_loader))
+    for i, (input_batch, target_batch) in enumerate(data_loader):
+        if i < num_batches:
+            input_batch  = input_batch.to(device)
+            target_batch = target_batch.to(device)
+
+            with torch.no_grad():
+                # 最后一个词元的logits
+                logits = model(input_batch)[:, -1, :]
+            predicted_labels = torch.argmax(logits, dim=-1)
+
+            num_examples += predicted_labels.shape[0]
+            correct_predictions += (
+                (predicted_labels == target_batch).sum().item()
+            )
+        else:
+            break
+    return correct_predictions / num_examples 
