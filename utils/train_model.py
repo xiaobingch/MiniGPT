@@ -66,7 +66,7 @@ def train_model(model, train_loader, val_loader, optimizer, device, num_epochs, 
     return train_losses, val_losses, track_tokens_seen
 
 
-def evaluate_model(model, train_loader, val_loader, device, eval_iter):
+def evaluate_model(model, train_loader, val_loader, device, eval_iter, is_classification=False):
     '''
     评估模型损失(数值)
     Args:
@@ -81,8 +81,8 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
 
     #评估阶段禁用梯度跟踪，减少计算开销也无必要
     with torch.no_grad(): 
-        train_loss = calc_loss_loader(train_loader, model, device, num_batches=eval_iter)
-        val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter)
+        train_loss = calc_loss_loader(train_loader, model, device, num_batches=eval_iter, is_classification=is_classification)
+        val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter, is_classification=is_classification)
 
     # 恢复模型为训练模式
     model.train()
