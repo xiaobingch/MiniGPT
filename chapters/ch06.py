@@ -455,5 +455,205 @@ with torch.no_grad():
 # Test loss: 2.585
 
 ##############################
-# 6.6 在有监督数据集上进行分类微调
+# 6.7 在有监督数据集上进行分类微调
 ##############################
+from utils.train_model import evaluate_model
+
+def train_classifier_simple(model,train_loader,val_loader,optimizer,device,num_epochs,eval_freq,eval_iter):
+    '''
+    分类微调
+    Args:
+        model: 语言模型
+        train_loader: 训练数据集
+        val_loader: 验证数据集
+        optimizer: 优化器
+        device: 决定训练模型在 CPU 还是 GPU 上运行
+        num_epochs: 训练轮次
+        eval_freq: 每隔多少个批次打印一次训练集和验证集损失
+        eval_iter: 计算数据集损失时使用的批次数
+    '''
+    # 初始化列表以根中损失和所见样本
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
+    examples_seen, global_step = 0, -1
+
+    # 主训练循环
+    for epoch in range(num_epochs):
+        # 设置模型为训练模式
+        model.train()
+        for input_batch, target_batch in train_loader:
+            # 重制上一批次迭代的损失梯度
+            optimizer.zero_grad()
+
+            # 计算损失梯度
+            loss = calc_loss_batch(
+                input_batch,
+                target_batch,
+                model,
+                device,
+                is_classification=True
+            )
+
+            # 反向传播损失梯度
+            loss.backward()
+
+            # 使用损失梯度更新模型权重
+            optimizer.step()
+
+            # 跟踪样本而不是词元
+            examples_seen += input_batch.shape[0]
+
+            global_step += 1
+
+            # 可选评估步骤
+            if global_step % eval_freq == 0:
+                train_loss, val_loss, = evaluate_model(model, train_loader, val_loader, device, eval_iter, is_classification=True)
+                train_losses.append(train_loss)
+                val_losses.append(val_loss)
+                print(
+                    f"Ep {epoch + 1}(Step {global_step:06d}: "
+                    f"Train loss {train_loss:.3f}, "
+                    f"Val loss {val_loss:.3f}"
+                )
+        # 每轮训练后计算准确率
+        train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=eval_iter)
+        val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=eval_iter)
+            
+        print(f"Training accuracy: {train_accuracy * 100:.2f}% | ", end="")
+        print(f"Validation accuracy: {val_accuracy * 100:.2f}")
+        train_accs.append(train_accuracy)
+        val_accs.append(val_accuracy)
+    return train_losses, val_losses, train_accs, val_accs, examples_seen
+
+import time
+start_time = time.time()
+torch.manual_seed(123)
+# AdamW 参数优化器
+optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
+num_epochs=5
+train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
+    model,
+    train_loader,
+    val_loader,
+    optimizer,
+    device,
+    num_epochs=num_epochs,
+    eval_freq=50,
+    eval_iter=5
+)
+end_time = time.time()
+execution_time_minutes = (end_time - start_time) / 60
+print(f"Training completed in {execution_time_minutes:.2f} minutes")
+# Ep 1(Step 000000: Train loss 2.630, Val loss 1.792
+# Ep 1(Step 000050: Train loss 1.008, Val loss 0.812
+# Ep 1(Step 000100: Train loss 0.657, Val loss 0.657
+# Training accuracy: 72.50% | Validation accuracy: 72.50
+# Ep 2(Step 000150: Train loss 0.796, Val loss 0.655
+# Ep 2(Step 000200: Train loss 0.626, Val loss 0.548
+# Ep 2(Step 000250: Train loss 0.514, Val loss 0.556
+# Training accuracy: 82.50% | Validation accuracy: 90.00
+# Ep 3(Step 000300: Train loss 0.558, Val loss 0.489
+# Ep 3(Step 000350: Train loss 0.511, Val loss 0.493
+# Training accuracy: 82.50% | Validation accuracy: 87.50
+# Ep 4(Step 000400: Train loss 0.479, Val loss 0.593
+# Ep 4(Step 000450: Train loss 0.564, Val loss 0.681
+# Ep 4(Step 000500: Train loss 0.343, Val loss 0.487
+# Training accuracy: 77.50% | Validation accuracy: 80.00
+# Ep 5(Step 000550: Train loss 0.442, Val loss 0.562
+# Ep 5(Step 000600: Train loss 0.257, Val loss 0.274
+# Training accuracy: 92.50% | Validation accuracy: 67.50
+# Training completed in 46.39 minutes
+
+# 分类损失曲线图
+import matplotlib.pyplot as plt
+
+def plot_values(epochs_seen, examples_seen, train_values, val_values, label="loss"):
+    fig, ax1 = plt.subplots(figsize=(5, 3))
+
+    # Plot training and validation loss against epochs
+    ax1.plot(epochs_seen, train_values, label=f"Training {label}")
+    ax1.plot(epochs_seen, val_values, linestyle="-.", label=f"Validation {label}")
+    ax1.set_xlabel("Epochs")
+    ax1.set_ylabel(label.capitalize())
+    ax1.legend()
+
+    # Create a second x-axis for examples seen
+    ax2 = ax1.twiny()  # Create a second x-axis that shares the same y-axis
+    ax2.plot(examples_seen, train_values, alpha=0)  # Invisible plot for aligning ticks
+    ax2.set_xlabel("Examples seen")
+
+    fig.tight_layout()  # Adjust layout to make room
+    plt.savefig(f"{label}-plot.pdf")
+    plt.show()
+
+epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
+examples_seen_tensor = torch.linspace(0, examples_seen, len(train_losses))
+
+plot_values(epochs_tensor, examples_seen_tensor, train_losses, val_losses)
+
+
+# 分类准确率曲线图
+epochs_tensor = torch.linspace(0, num_epochs, len(train_accs))
+examples_seen_tensor = torch.linspace(0, examples_seen, len(train_accs))
+
+plot_values(epochs_tensor, examples_seen_tensor, train_accs, val_accs, label="accuracy")
+
+
+# 计算整个数据集的性能指标
+train_accuracy = calc_accuracy_loader(train_loader, model, device)
+val_accuracy = calc_accuracy_loader(val_loader, model, device)
+test_accuracy = calc_accuracy_loader(test_loader, model, device)
+print(f"Training accuracy: {train_accuracy * 100:.2f}%")
+print(f"Validation accuracy: {val_accuracy * 100:.2f}%")
+print(f"Test accuracy: {test_accuracy * 100:.2f}%")
+
+
+##############################
+# 6.8 使用大语言模型作为
+#     垃圾消息分类器
+##############################
+def classify_review(text, model, tokenizer, device, max_length=None, pad_token_id=50256):
+    model.eval()
+
+    # 准备模型的输入数据
+    input_ids = tokenizer.encode(text)
+    supported_context_length = model.pos_emb.weight.shape[0]
+
+    # 截断过长序列
+    input_ids = input_ids[:min(max_length, supported_context_length)]
+
+    # 填充序列至最长序列长度
+    input_ids += [pad_token_id] * (max_length - len(input_ids))
+
+    # 添加批次维度
+    input_tensor = torch.tensor(input_ids, device=device).unsqueeze(0)
+
+    # 推理时不需要计算梯度
+    with torch.no_grad():
+        logits = model(input_tensor)[:, -1, :] # 最后一个输出词元的logits
+    predicted_label = torch.argmax(logits, dim=-1).item()
+
+    # 返回分类结果
+    return "spam" if predicted_label == 1 else "not spam"
+
+text_1 = (
+    "You are a winner you have been specially"
+    " selected to receive $1000 cash or a $2000 award."
+)
+print(classify_review(
+    text_1, model, tokenizer, device, max_length=train_dataset.max_length
+))
+
+text_2 = (
+    "Hey, just wanted to check if we're still on"
+    " for dinner tonight? Let me know!"
+)
+print(classify_review(
+    text_2, model, tokenizer, device, max_length=train_dataset.max_length
+))
+
+# 保存模型权重
+torch.save(model.state_dict(), "review_classifier.pth")
+
+# 加载模型权重
+# model_state_dict = torch.load("review_classifier.pth", map_location=device)
+# model.load_state_dict(model_state_dict)
