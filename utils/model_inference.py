@@ -65,8 +65,8 @@ def generate(model, idx, max_new_tokens, context_size, temperature=0.0, top_k=No
 def text_to_token_ids(text, tokenizer):
     '''
     文本转tonken id
-    text:输入文本
-    tokenizer:分词器
+        text:输入文本
+        tokenizer:分词器
     '''
     # 将用户输入的文本转换为 token id
     encode = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
@@ -79,11 +79,49 @@ def text_to_token_ids(text, tokenizer):
 def token_ids_to_text(token_ids, tokenizer):
     '''
     将 token id 转换为文本
-    token_ids:输入文本
-    tokenizer:分词器
+        token_ids:输入文本
+        tokenizer:分词器
     '''
     # # 将 token id 转换为文本
     # squeeze 方法用于在张量维度上减少一个维度，这里在第一个维度上减少一个维度，使得输出的形状为 (num_tokens)
     # 这里使用 squeeze 方法是因为模型输出的形状为 (batch_size, num_tokens)，而我们只需要一个文本，因此需要减少一个维度
     flat = token_ids.squeeze(0)#移除batch维度
     return tokenizer.decode(flat.tolist())
+
+
+def classify_review(text, model, tokenizer, device, max_length=None, pad_token_id=50256):
+    """
+    分类评论
+    Args:
+        text: 用户输入的文本
+        model: 语言模型
+        tokenizer: 分词器
+        device: 决定模型在 CPU 还是 GPU 上运行
+        max_length: 输入文本的最大长度，根据你的模型不同会限制最大能接受的输入长度
+        pad_token_id: 填充 token 的 id, 默认使用 GPT-2 的 token id 50256 即 <|endoftext|> 来填充
+    """
+
+    # 将用户输入的文本转换为 token id
+    # unsqueeze 方法用于在张量维度上增加一个维度，这里在第一个维度上增加一个维度，使得输入的形状为 (1, num_tokens)
+    # 这里使用 unsqueeze 方法是因为模型要求输入的形状为 (batch_size, num_tokens)
+    input_ids = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
+
+    # 将当前文本截断至支持的长度。如果大模型仅支持5个词元，如果输入文本长度为10，则只有最后5个词元会被用于输入文本
+    input_ids = input_ids[-max_length:]
+
+
+    # 如果输入文本长度小于 max_length，则使用 pad_token_id 填充到 max_length
+    input_ids += [pad_token_id] * (max_length - len(input_ids))
+
+    # 添加批次维度
+    input_tensor = torch.tensor(input_ids, device=device).unsqueeze(0)
+
+    # 推理时不需要计算梯度
+    with torch.no_grad():
+        logits = model(input_tensor)[:, -1, :] # 最后一个输出词元的logits
+
+    # 将 logits 转换为概率分布，并使用了 argmax 方法找出概率最大的类别标签
+    predicted_label = torch.argmax(logits, dim=-1).item()
+
+    # 返回预测的类别标签，0 表示 "not spam"，1 表示 "spam"
+    return "spam" if predicted_label == 1 else "not spam"
