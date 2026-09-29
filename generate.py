@@ -16,9 +16,9 @@ encode = text_to_token_ids("I HAD always thought Jack Gisburn", tokenizer).to(de
 
 model = GPTModel(GPT_CONFIG_124M)
 
-# model_path = 'model.pth'
+# model_path = 'weights/model.pth'
 # model.load_state_dict(torch.load(model_path, weights_only=True))
-model_path = 'chapters/pytorch_model.bin' # openAI gpt2_124M_weights
+model_path = 'weights/pytorch_model.bin' # openAI gpt2_124M_weights
 load_gpt2_weights_into_model(model, model_path) #加载openAI gpt2_124M_weights
 
 # 切换为推理模式，将禁用 dropout 等只在训练时使用的功能

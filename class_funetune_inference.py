@@ -35,7 +35,7 @@ model.out_head = torch.nn.Linear(
 )
 
 # 加载之前训练好的模型权重参数，weights_only=True 表示只加载模型参数，不加载优化器等状态信息
-model_path="review_classifier.pth"
+model_path="weights/review_classifier.pth"
 model.load_state_dict(torch.load(model_path, weights_only=True))
 
 # 切换为推理模式，将禁用 dropout 等只在训练时使用的功能

@@ -88,7 +88,7 @@ val_loader = DataLoader(
 # 初始化大模型并加载GPT2-124M权重
 ##############################
 model = GPTModel(GPT_CONFIG_124M)
-gpt2_model_path = "pytorch_model.bin"
+gpt2_model_path = "weights/pytorch_model.bin"
 load_gpt2_weights_into_model(model, gpt2_model_path)
 model.eval()
 
@@ -144,5 +144,5 @@ train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier
 )
 
 # 保存模型权重
-model_path = "review_classifier.pth"
+model_path = "weights/review_classifier.pth"
 torch.save(model.state_dict(), model_path)

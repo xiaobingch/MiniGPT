@@ -98,5 +98,5 @@ train_losses, val_losses, tokens_seen = train_model(
 )
 
 # 保存模型权重
-model_path = "model.pth"
+model_path = "weights/model.pth"
 torch.save(model.state_dict(), model_path)
