@@ -9,6 +9,17 @@ GPT_CONFIG_124M = {
     'qkv_bias':True,             #查询-键-值偏置
 }
 
+
+GPT_CONFIG_355M = {
+    'vocab_size': 50257,        #词汇表大小
+    'context_length': 1024,     #上下文长度
+    'emb_dim':1024,              #嵌入维度
+    'n_heads':16,               #注意力头数
+    'n_layers':24,              #层数
+    'drop_rate':0.0,            #dropout率
+    'qkv_bias':True,             #查询-键-值偏置
+}
+
 model_configs = {
     "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
     "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
