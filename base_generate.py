@@ -5,17 +5,26 @@ from utils.load_gpt2_weights import load_gpt2_weights_into_model
 import torch
 import tiktoken
 
-
+##############################
+# 初始化
+##############################
 # 初始化分词器
 tokenizer = tiktoken.get_encoding("gpt2")
 
 # 如果你有一台支持 CUDA 的 GPU 机器，那么大语言模型将自动在 GPU 上训练且不需要修改代码
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-encode = text_to_token_ids("I HAD always thought Jack Gisburn", tokenizer).to(device)
+# 设置随机种子以保证结果可复现
+torch.manual_seed(123)
 
+
+##############################
+# 初始化基础模型以及加载加载基础权重
+##############################
 model = GPTModel(GPT_CONFIG_124M)
+model.to(device)
 
+# 加载模型权重
 # model_path = 'weights/model.pth'
 # model.load_state_dict(torch.load(model_path, weights_only=True))
 model_path = 'weights/pytorch_model.bin' # openAI gpt2_124M_weights
@@ -24,8 +33,11 @@ load_gpt2_weights_into_model(model, model_path) #加载openAI gpt2_124M_weights
 # 切换为推理模式，将禁用 dropout 等只在训练时使用的功能
 model.eval()
 
-torch.manual_seed(123)
 
+##############################
+# 基础预训练模型推理
+##############################
+encode = text_to_token_ids("I HAD always thought Jack Gisburn", tokenizer).to(device)
 token_ids = generate(
     model=model, 
     idx=encode, 
