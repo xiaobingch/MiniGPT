@@ -121,6 +121,13 @@ class SpamDataset(Dataset):
 
 
 class InstructionDataset(Dataset):
+    '''
+    用于加载指令微调数据集的类
+
+    Args:
+        data: 字符串格式的文本数据
+        tokenizer: 分词器
+    '''
     def __init__(self, data, tokenizer):
         self.data = data
         self.encoded_texts = []
@@ -144,6 +151,18 @@ def custom_collate_fn(
     allowed_max_length=None, 
     device='cpu'
 ):
+    '''
+    指令微调的自定义批处理函数，用于自定义批次数据的整理方式
+    有自定义 collate_fn 的情况下，随机/不随机（shuffle）选择 batch 个索引传入 dataset 里的 __getitem__(self, index) 得到对应的数据，
+    将这些数据（样本对）传入 collate_fn 指定函数进行处理
+    
+    Args:
+        batch: 当前批次的数据
+        pad_token_id: 填充 token 的 id, 默认使用 GPT-2 的 token id 50256 即 <|endoftext|> 来填充
+        ignore_index: 忽略的 id, 在计算损失值时将不计算包含这些 id 的 token
+        allowed_max_length: 允许的最大序列长度，如超过则截断
+        device: 决定模型在 CPU 还是 GPU 上运行
+    '''
     batch_max_length = max(len(item) + 1 for item in batch) # 找到批次中最长的序列
     inputs_lst, targets_lst = [], []
 
