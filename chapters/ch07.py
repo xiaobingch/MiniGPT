@@ -489,7 +489,6 @@ plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
 # 7.7 抽取并保存模型回复
 ##############################
 # 测试三个样本的预期回复和模型回复对比
-
 #加载权重
 model_path="../weights/instruction_executor.pth"
 model.load_state_dict(torch.load(model_path, weights_only=True))
@@ -581,7 +580,10 @@ with open("instruction-test-data-with-response.json", "w") as file:
 # 7.8 评估指令微调后的模型
 ##############################
 # 主要通过短答案、多项选择、MMLU基准测试考察模型基础知识，通过chatbot竞技场进行人类偏好比较
-
 # 下载Ollama的Llam3—70B模型或通过GPT4 API
 # 组装测试集以及回复请求模型评价以及打分
 # 根据分数平均值动态调整批次大小、轮次、学习率等参数
+
+##############################
+# 7.9 指令微调之后还有偏好微调
+##############################

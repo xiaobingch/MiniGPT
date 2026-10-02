@@ -119,3 +119,72 @@ class SpamDataset(Dataset):
                 max_length = encoded_length
         return max_length
 
+
+class InstructionDataset(Dataset):
+    def __init__(self, data, tokenizer):
+        self.data = data
+        self.encoded_texts = []
+        for entry in data:
+            instruction_plus_input = format_input(entry) # 预词元化文本
+            response_text = f"\n\n### Response:\n{entry['output']}"
+            full_text = instruction_plus_input + response_text
+            self.encoded_texts.append(
+                tokenizer.encode(full_text)
+            )
+    def __getitem__(self, index):
+        return self.encoded_texts[index]
+
+    def __len__(self):
+        return len(self.data)
+
+def custom_collate_fn(
+    batch, 
+    pad_token_id=50256,
+    ignore_index=-100, 
+    allowed_max_length=None, 
+    device='cpu'
+):
+    batch_max_length = max(len(item) + 1 for item in batch) # 找到批次中最长的序列
+    inputs_lst, targets_lst = [], []
+
+    for item in batch:
+        new_item = item.copy()
+        new_item += [pad_token_id]
+
+        # 填充词元pad_token_id
+        padded = (
+            new_item + [pad_token_id] * (batch_max_length - len(new_item))
+        )
+        inputs = torch.tensor(padded[:-1]) # 删除之前额外填充的词元
+        targets = torch.tensor(padded[1:]) # 像左移动一个位置得到目标
+
+        # 把目标序列中的除第一个填充词元以外的填充词元填充为ignone_index
+        mask = targets == pad_token_id # 找到所有填充 Token 的位置，例如[102, 103, 50256, 50256, 50256]，得到[False, False, True, True, True]
+        indices = torch.nonzero(mask).squeeze() # 找出 True 所在的索引，即[2, 3, 4]
+        if indices.numel() > 1:
+            targets[indices[1:]] = ignore_index # 保留第一个填充 Token，将其余位置设为 -100
+
+        # 可选的截断至最大序列长度
+        if allowed_max_length is not None:
+            inputs = inputs[:allowed_max_length]
+            targets = targets[:allowed_max_length]
+
+        inputs_lst.append(inputs)
+        targets_lst.append(targets)
+
+    inputs_tensor = torch.stack(inputs_lst).to(device) # 输入列表变成一个张量并转移到目标设备
+    targets_tensor = torch.stack(targets_lst).to(device) # 目标列表变成一个张量并转移到目标设备
+    return inputs_tensor, targets_tensor
+
+# 实现提示词格式函数
+def format_input(entry):
+    instruciton_text = (
+        f"Below is an instruction that describes a task."
+        f"Write a response that appropriately completes the request."
+        f"\n\n### Instruction:\n{entry['instruction']}"
+    )
+
+    input_text = (
+        f"\n\n### Input:\n{entry['input']}" if entry['input'] else ""
+    )
+    return instruciton_text + input_text
