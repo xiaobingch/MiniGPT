@@ -31,7 +31,7 @@ MiniGPT
 │   ├── pytorch_model.bin               # 124M权重
 │   ├── pytorch_model_355m.bin          # 355M权重
 │   └── review_classifier.pth           # 基于GPT2-124M分类微调后的权重
-├── base_generate.py                    # 文本生成
+├── base_generate.py                    # 基础文本补全
 ├── base_pretrain.py                    # 预训练
 ├── class_funetune_inference.py         # 垃圾消息分类推理 
 ├── class_funetune_train.py             # 消息分类微调
@@ -39,7 +39,7 @@ MiniGPT
 ├── instruction_funetune_train.py       # 指令遵从微调
 ├── README.md                          
 ├── requirements.txt
-└── tree.py                             # 树状目录脚本
+└── tree.py                             # 树状目录生成脚本
 ```
 ## 安装
 ## 基础模型
