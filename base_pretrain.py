@@ -12,16 +12,17 @@ from argparse import ArgumentParser
 if __name__=="__main__":
     '''
     初始化大模型并进行模型预训练
-    主要参数:
-        data_path:原始数据集文件路径
-        config: 模型参数配置
-        model_path:模型权重保存路径
+
+    Args:
+        --data_path(str):原始数据集文件路径
+        --configP(str): 模型参数配置
+        --model_path(str):模型权重保存路径
     '''
 
     parser = ArgumentParser()
-    parser.add_argument("--config", type=str, default="configs/gpt2_config_124m.json")
+    parser.add_argument("--config", type=str, default="configs/gpt2_config_124m_ctx256.json")
     parser.add_argument("--data_path",type=str, default="data/the-verdict.txt")
-    parser.add_argument("--model_path",type=str, default="weights/model.pth")
+    parser.add_argument("--model_path",type=str, default="weights/model_ctx256.pth")
 
     args = parser.parse_args()
     config, data_path, model_path = args.config, args.data_path, args.model_path
