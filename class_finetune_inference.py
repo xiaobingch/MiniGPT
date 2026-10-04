@@ -78,7 +78,7 @@ if __name__=="__main__":
     ##############################
     print("开始对话（输入'exit'退出）\n")
     while True:
-        input_text = input("User: ")
+        input_text = input("用户: ")
         if input_text.lower() == '':
             print("输入不能为空！")
             continue
