@@ -93,7 +93,6 @@ test_loader = DataLoader(
 ##############################
 # 初始化并加载带gpt2-255m权重的基础模型
 ##############################
-
 #实例化模型
 model = GPTModel(GPT_CONFIG_355M)
 model.to(device)
@@ -106,7 +105,6 @@ load_gpt2_weights_into_model(model, gpt2_model_path)
 ##############################
 # 训练模型以及保存指令微调权重
 ##############################
-
 # 初始化优化器，优化器是用于更新模型权重参数的算法，这里使用 AdamW 算法
 optimizer = torch.optim.AdamW(
     model.parameters(), # .parameters()方法返回模型的所有可训练权重参数
