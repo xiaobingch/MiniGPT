@@ -1,5 +1,5 @@
 from model.gpt_model import GPTModel
-from configs.config import GPT_CONFIG_124M
+# from configs.config import GPT_CONFIG_124M
 from utils.model_inference import classify_review
 import torch
 import tiktoken
@@ -62,7 +62,7 @@ if __name__=="__main__":
     # 现在将其输出层作用改为映射为 2 维的向量，即 0/1 两类的分类器
     num_classes = 2
     model.out_head = torch.nn.Linear(
-        in_features = GPT_CONFIG_124M['emb_dim'],
+        in_features = cfg['emb_dim'],
         out_features = num_classes
     )
 
