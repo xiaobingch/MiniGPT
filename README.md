@@ -50,7 +50,7 @@ MiniGPT
 python base_pretrain.py --config configs/gpt2_config_124m_ctx256.json --data_path data/the-verdict.txt --model_path weights/model_ctx256.pth
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数           | 说明       | 必填  | 默认值                                  |
 | ------------ | -------- | --- | ------------------------------------ |
@@ -64,7 +64,7 @@ python base_pretrain.py --config configs/gpt2_config_124m_ctx256.json --data_pat
 python base_pretrain.py --config configs/gpt2_config_124m_ctx256.json --model_path weights/model_ctx256.pth --max_new_tokens 50 --temperature 1.2 --top_k 35
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数 | 说明  | 必填  | 默认值 |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ python3 base_generate.py
 python --config configs/gpt2_config_124m.json --data_path data/SMSSpamCollection.tsv --model_path weights/review_classifier.pth --gpt2_model_path weights/pytorch_model.bin
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数  | 说明  | 必填  | 默认值 |
 | --- | --- | --- | --- |
@@ -108,7 +108,7 @@ python --config configs/gpt2_config_124m.json --data_path data/SMSSpamCollection
 python --config configs/gpt2_config_124m.json --model_path weights/review_classifier.pth
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数  | 说明  | 必填  | 默认值 |
 | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ python3 class_finetune_inference.py
 python --data_path data/instruction-data.json --config configs/gpt2_config_355m.json --gpt2_model_path weights/pytorch_model_355m.bin --model_path weights/instruction_executor.pth
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数  | 说明  | 必填  | 默认值 |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ python --data_path data/instruction-data.json --config configs/gpt2_config_355m.
 python --config configs/gpt2_config_355m.json --model_path weights/instruction_executor.pth --max_new_tokens 768 --temperature 0.0 --top_k 25
 ```
 
-**参数说明：**
+参数说明：
 
 | 参数  | 说明  | 必填  | 默认值 |
 | --- | --- | --- | --- |
