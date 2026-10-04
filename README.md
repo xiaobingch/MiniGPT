@@ -33,22 +33,37 @@ MiniGPT
 │   └── review_classifier.pth           # 基于GPT2-124M分类微调后的权重
 ├── base_generate.py                    # 基础文本补全
 ├── base_pretrain.py                    # 预训练
-├── class_funetune_inference.py         # 垃圾消息分类推理 
-├── class_funetune_train.py             # 消息分类微调
-├── instruction_funetune_inference.py   # 指令执行推理
-├── instruction_funetune_train.py       # 指令遵从微调
+├── class_finetune_inference.py         # 垃圾消息分类推理 
+├── class_finetune_train.py             # 消息分类微调
+├── instruction_finetune_inference.py   # 指令执行推理
+├── instruction_finetune_train.py       # 指令遵从微调
 ├── README.md                          
 ├── requirements.txt
 └── tree.py                             # 树状目录生成脚本
 ```
 ## 安装
+
 ## 基础模型
 ### 预训练
+#### 使用
+```bash
+python base_pretrain.py --config configs/gpt2_config_124m_ctx256.json --data_path data/the-verdict.txt --model_path weights/model_ctx256.pth
+```
+#### 参数
+｜参数｜说明｜必填｜默认值｜
+｜---｜---｜---｜---｜
+｜ `config` | 模型配置文件路径 | 否 | configs/gpt2_config_124m_ctx256.json |
+｜ `data_path` |数据源文件路径 | 否 | data/the-verdict.txt |
+｜ `model_path` | 模型保存路径| 否 | weights/model_ctx256.pth |
+
 ### 文本生成
+
 ## 分类微调
 ### 微调训练
 ### 文本分类
+
 ## 指令微调
 ### 微调训练
 ### 指令遵从
+
 ## 参考资料
