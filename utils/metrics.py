@@ -49,12 +49,13 @@ def calc_loss_batch(input_batch, target_batch, model, device, is_classification=
     # [0.00009, 0.00001, 0.00003, ..., 0.00005, 0.00008, 0.00004],
     # [0.00005, 0.00002, 0.00003, ..., 0.00007, 0.00008, 0.00004]]]
     #
-    # 第 3 步，根据 target_batch 中目标 token 的 id，从 probabilities 最后一个维度中取出对应目标 token 的在本次实际预测的概率，即 probas[0, [0,1,2], targets[0]]
+    # 第 3 步，根据 target_batch 中目标 token 的 id，从 probabilities 最后一个维度中取出对应目标 token 的在本次实际预测的概率，即 probas[0, [0,1,2], targets[0]]:第一个样本,第0-3索引位置，目标样本的tokenID
     # 得到 target_probabilities，形状仍为 (batch_size, num_tokens)
     # 例如
     # [[0.009,
     # 0.00002,
     # 0.00003],
+
     # [0.00006,
     # 0.00008,
     # 0.00004]]
